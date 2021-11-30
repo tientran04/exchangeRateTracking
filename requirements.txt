@@ -1,3 +1,4 @@
 Flask
 Flask-Mail
 beautifulsoup4
+requests
