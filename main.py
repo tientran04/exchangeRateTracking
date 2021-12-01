@@ -43,7 +43,6 @@ def get_exchange_rate(recipients, send_mail_date):
                 send_mail_date[email] = date.today()
 
 
-
 def send_mail(exchange_rate, email):
     with app.app_context():
         msg = Message(subject = f"Update NZD/VND exchange rate {date.today()}",
@@ -51,7 +50,7 @@ def send_mail(exchange_rate, email):
                       recipients = [email],
                       body = f"NZD/VND is {exchange_rate} at the moment.")
         mail.send(msg)
-
+    return "Send mail successfully!"
 
 def getExchange(recipients, send_mail_date):
     get_exchange_rate(recipients, send_mail_date)
@@ -71,20 +70,19 @@ def entry_page():
     entry_headling = "Welcome to Exchange Rate Tracking Site "
     return render_template("entry.html", entry_headling = entry_headling)
 
+
 @app.route("/start")
 def start():
     getExchange(recipients, send_mail_date)
     wake_up()
-    
+    return "Start get exchange successfully!"
 
 
 @app.route("/register", methods=["POST"])
 def register():
     value = float(request.form["value"].replace(",", ""))
     email = request.form["email"].strip()
-
     recipients[email] = value
-    
     return render_template("register.html")
 
 
