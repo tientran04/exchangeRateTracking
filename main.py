@@ -59,9 +59,10 @@ def getExchange(recipients, send_mail_date):
     t.start()
 
 def wake_up():
-    request.get("https://exchangeratetracking.herokuapp.com/")
-    t = Timer(1500, wake_up)
-    t.start()
+    with app.app_context():
+        request.get("https://exchangeratetracking.herokuapp.com/")
+        t = Timer(1500, wake_up)
+        t.start()
 
 
 getExchange(recipients, send_mail_date)
