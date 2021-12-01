@@ -60,19 +60,22 @@ def getExchange(recipients, send_mail_date):
 
 
 def wake_up():
-    request.get("https://exchangeratetracking.herokuapp.com/")
-    t = Timer(1500, wake_up)
-    t.start()
-
-
-getExchange(recipients, send_mail_date)
-wake_up()
+    with app.app_context():
+        requests.get("https://exchangeratetracking.herokuapp.com/")
+        t = Timer(1500, wake_up)
+        t.start()
 
 
 @app.route("/")
 def entry_page():
     entry_headling = "Welcome to Exchange Rate Tracking Site "
     return render_template("entry.html", entry_headling = entry_headling)
+
+@app.route("/start")
+def start():
+    getExchange(recipients, send_mail_date)
+    wake_up()
+    
 
 
 @app.route("/register", methods=["POST"])
