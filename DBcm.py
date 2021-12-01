@@ -6,7 +6,7 @@ class UseDatabase:
     def __init__(self, config: dict) -> None:
         self.configuration = config
 
-    def __enter__(self) -> "cursor":
+    def __enter__(self):
         try:
             self.conn = psycopg2.connect(**self.configuration)
             self.cursor = self.conn.cursor()
