@@ -3,3 +3,4 @@ Flask-Mail
 beautifulsoup4
 requests
 lxml
+psycopg2

@@ -3,22 +3,9 @@
 {% block body %}
 
 <h2>{{ entry_headling }}</h2>
-
-    <form method="POST" action="/register">
-        <p>This site allow you to track the exchange rate of NZD to VND. If the exchange rate reach the specified value,
-            it will send you an email to update the information.
-        </p>
-        <p>
-            <label>Value: </label>
-            <input type="text" name="value" id="value" placeholder="Input value" autocomplete="off">
-        </p>
-        <p>
-            <label>Email: </label>
-            <input type="text" name="email" id="email" placeholder="Input your email" autocomplete="off">
-        </p>
-        <p>
-            <input type="submit" value="Register">
-        </p>
-    </form>
-
+<p>This site allow you to track the exchange rate of NZD to VND. If the exchange rate reach the specified value, 
+    it will send you an email to update the information.
+</p>
+<p><a href="./register.html">Register</a></p>
+<p><a href="./unfollow.html">Unfollow</a></p>
 {% endblock %}

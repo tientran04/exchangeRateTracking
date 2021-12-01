@@ -5,9 +5,13 @@ from bs4 import BeautifulSoup as soup
 from threading import Thread, Timer
 from datetime import date, datetime
 import os
+from DBcm import UseDatabase
 
 
 app = Flask(__name__)
+
+recipients = {}
+send_mail_date = {}
 
 mail_settings = {
     "MAIL_SERVER": 'smtp.gmail.com',
@@ -18,11 +22,15 @@ mail_settings = {
     "MAIL_PASSWORD": "blofpvyhdixyzklj"
 }
 
-recipients = {}
-send_mail_date = {}
 
 app.config.update(mail_settings)
 mail = Mail(app)
+
+
+app.config["dbconfig"] = {  'host': '127.0.0.1',
+                            'user': 'postgres',
+                            'password': '123',
+                            'database': 'exchangeratetracking'}
 
 
 def get_exchange_rate(recipients, send_mail_date):
@@ -52,6 +60,7 @@ def send_mail(exchange_rate, email):
         mail.send(msg)
     return "Send mail successfully!"
 
+
 def getExchange(recipients, send_mail_date):
     get_exchange_rate(recipients, send_mail_date)
     t = Timer(5, getExchange, args=(recipients, send_mail_date))
@@ -67,7 +76,7 @@ def wake_up():
 
 @app.route("/")
 def entry_page():
-    entry_headling = "Welcome to Exchange Rate Tracking Site "
+    entry_headling = "Welcome to NZD Exchange Rate Tracking Site "
     return render_template("entry.html", entry_headling = entry_headling)
 
 
@@ -82,8 +91,16 @@ def start():
 def register():
     value = float(request.form["value"].replace(",", ""))
     email = request.form["email"].strip()
-    recipients[email] = value
-    return render_template("register.html")
+    try:
+        with UseDatabase(app.config['dbconfig']) as cursor:
+                    _SQL="""INSERT INTO recipients (email, exchange_rate)
+                            VALUES (%s, %s)"""
+                    cursor.execute(_SQL, (email, value))
+        message = "You have registered successfully!"
+    except Exception as error:
+        print(error)
+
+    return render_template("successful.html", message = message)
 
 
 @app.route("/view")
