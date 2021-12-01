@@ -65,16 +65,17 @@ def wake_up():
     t.start()
 
 
-getExchange(recipients, send_mail_date)
-
-with app.app_context():
-    wake_up()
-
-
 @app.route("/")
 def entry_page():
     entry_headling = "Welcome to Exchange Rate Tracking Site "
     return render_template("entry.html", entry_headling = entry_headling)
+
+@app.route("/start")
+def start():
+    getExchange(recipients, send_mail_date)
+
+    with app.app_context():
+        wake_up()
 
 
 @app.route("/register", methods=["POST"])
