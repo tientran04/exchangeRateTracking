@@ -60,9 +60,10 @@ def getExchange(recipients, send_mail_date):
 
     
 def wake_up():
-    request.get("https://exchangeratetracking.herokuapp.com/")
-    t = Timer(1500, wake_up)
-    t.start()
+    with app.app_context():
+        requests.get("https://exchangeratetracking.herokuapp.com/")
+        t = Timer(1500, wake_up)
+        t.start()
 
 
 @app.route("/")
@@ -73,9 +74,8 @@ def entry_page():
 @app.route("/start")
 def start():
     getExchange(recipients, send_mail_date)
-
-    with app.app_context():
-        wake_up()
+    wake_up()
+    
 
 
 @app.route("/register", methods=["POST"])
