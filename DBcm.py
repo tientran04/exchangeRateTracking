@@ -14,10 +14,12 @@ class UseDatabase:
         except (Exception, psycopg2.DatabaseError) as error:
             print(error)
 
-    def __exit__(self) -> None:
+    def __exit__(self, exc_type, exc_value, exc_trace) -> None:
         self.conn.commit()
         self.cursor.close()
         self.conn.close()
         
+        if exc_type is not None:
+            print(exc_type, exc_value, exc_trace)
             
     

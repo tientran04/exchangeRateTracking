@@ -1,5 +1,6 @@
+import re
 import requests
-from flask import Flask, render_template, request
+from flask import Flask, render_template, request, url_for
 from flask_mail import Mail, Message
 from bs4 import BeautifulSoup as soup
 from threading import Thread, Timer
@@ -75,9 +76,9 @@ def wake_up():
 
 
 @app.route("/")
-def entry_page():
+def index():
     entry_headling = "Welcome to NZD Exchange Rate Tracking Site "
-    return render_template("entry.html", entry_headling = entry_headling)
+    return render_template("index.html", entry_headling = entry_headling)
 
 
 @app.route("/start")
@@ -87,19 +88,53 @@ def start():
     return "Start get exchange successfully!"
 
 
-@app.route("/register", methods=["POST"])
+@app.route("/register", methods=["GET", "POST"])
 def register():
+    #render register.html if get
+    if request.method == "GET":
+        return render_template("register.html")
+
+    #update database if post
     value = float(request.form["value"].replace(",", ""))
     email = request.form["email"].strip()
     try:
         with UseDatabase(app.config['dbconfig']) as cursor:
-                    _SQL="""INSERT INTO recipients (email, exchange_rate)
-                            VALUES (%s, %s)"""
-                    cursor.execute(_SQL, (email, value))
-        message = "You have registered successfully!"
+            _SELECT_SQL="""SELECT * FROM recipients WHERE email = %s;"""
+            cursor.execute(_SELECT_SQL, (email,))
+            check = cursor.fetchone()
+            if check:
+                _UPDATE_SQL="""UPDATE recipients SET exchange_rate = %s WHERE email = %s;"""
+                cursor.execute(_UPDATE_SQL, (value, email))
+                message = "You have updated exchange rate value successfully!"
+            else:
+                _INSERT_SQL="""INSERT INTO recipients (email, exchange_rate)
+                        VALUES (%s, %s);"""
+                cursor.execute(_INSERT_SQL, (email, value))
+                message = "You have registered successfully!"
     except Exception as error:
         print(error)
+        message = error
 
+    return render_template("successful.html", message = message)
+
+
+@app.route("/unfollow", methods=["GET", "POST"])
+def unfollow():
+    #handle GET request
+    if request.method == "GET":
+        return render_template("unfollow.html")
+
+    #handle POST request
+    email = request.form["email"].strip()
+    try:
+        with UseDatabase(app.config['dbconfig']) as cursor:
+                    _SQL="""DELETE FROM recipients
+                            WHERE email = %s;"""
+                    cursor.execute(_SQL, (email,))
+        message = "You have unfollowed the exchange rate tracking site!"
+    except Exception as error:
+        print(error)
+        message = error
     return render_template("successful.html", message = message)
 
 
