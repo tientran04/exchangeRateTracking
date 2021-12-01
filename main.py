@@ -55,11 +55,17 @@ def send_mail(exchange_rate, email):
 
 def getExchange(recipients, send_mail_date):
     get_exchange_rate(recipients, send_mail_date)
-    t = Timer(1, getExchange, args=(recipients, send_mail_date))
+    t = Timer(5, getExchange, args=(recipients, send_mail_date))
+    t.start()
+
+def wake_up():
+    request.get("https://exchangeratetracking.herokuapp.com/")
+    t = Timer(1500, wake_up)
     t.start()
 
 
 getExchange(recipients, send_mail_date)
+wake_up()
 
 
 @app.route("/")
@@ -75,7 +81,7 @@ def register():
 
     recipients[email] = value
     
-    return render_template("register.html", recipients = recipients, send_date = send_mail_date)
+    return render_template("register.html")
 
 
 @app.route("/view")
