@@ -30,10 +30,10 @@ app.config["dbconfig"] = {  'host': '127.0.0.1',
                             'database': 'exchangeratetracking'}
 
 #local
-DATABASE_URL = app.config["dbconfig"]
+#DATABASE_URL = app.config["dbconfig"]
 
 #heroku
-#DATABASE_URL = os.environ.get('DATABASE_URL')
+DATABASE_URL = os.environ.get('DATABASE_URL')
 
 #functions for app
 def get_exchange_rate():
