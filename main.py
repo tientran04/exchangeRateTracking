@@ -1,4 +1,3 @@
-import re
 import requests
 from flask import Flask, render_template, request, url_for
 from flask_mail import Mail, Message
@@ -11,9 +10,7 @@ from DBcm import UseDatabase
 
 app = Flask(__name__)
 
-recipients = {}
-send_mail_date = {}
-
+#config
 mail_settings = {
     "MAIL_SERVER": 'smtp.gmail.com',
     "MAIL_PORT": 465,
@@ -22,7 +19,6 @@ mail_settings = {
     "MAIL_USERNAME": "tientran.test@gmail.com",
     "MAIL_PASSWORD": "blofpvyhdixyzklj"
 }
-
 
 app.config.update(mail_settings)
 mail = Mail(app)
@@ -33,39 +29,63 @@ app.config["dbconfig"] = {  'host': '127.0.0.1',
                             'password': '123',
                             'database': 'exchangeratetracking'}
 
+#local
+DATABASE_URL = app.config["dbconfig"]
 
-def get_exchange_rate(recipients, send_mail_date):
-    print("###Get Exchange: Start " + datetime.now().strftime("%H:%M:%S"))
-    url = "https://www.google.com/search?q=nzd+to+vnd"
-    res = requests.get(url).content
-    web_content = soup(res, "lxml")
-    exchange_rate_text = web_content.find_all("div", class_="BNeawe iBp4i AP7Wnd")[-1].get_text()
-    exchange_rate_array = exchange_rate_text.replace(",", "").split()
-    exchange_rate = float(exchange_rate_array[0])
+#heroku
+#DATABASE_URL = os.environ.get('DATABASE_URL')
 
+#functions for app
+def get_exchange_rate():
+    print("###Get Exchange: Start " + datetime.now().strftime("%d/%m/%Y %H:%M:%S"))
+    try:
+        url = "https://www.google.com/search?q=nzd+to+vnd"
+        res = requests.get(url).content
+        web_content = soup(res, "lxml")
+        exchange_rate_text = web_content.find_all("div", class_="BNeawe iBp4i AP7Wnd")[-1].get_text()
+        exchange_rate_array = exchange_rate_text.replace(",", "").split()
+        exchange_rate = float(exchange_rate_array[0])
+    except:
+        exchange_rate = 0
     print(f"###Exchange rate: {exchange_rate}")
-
-    for email, value in recipients.items():
-        if (exchange_rate - 150) > value:
-            if email not in send_mail_date or send_mail_date[email] != date.today():
-                send_mail(exchange_rate, email)
-                send_mail_date[email] = date.today()
+    return exchange_rate
 
 
-def send_mail(exchange_rate, email):
+def get_recipients(exchange_rate):
+    """Get recipients that has exchange_rate lower than current exchange rate"""  
+    try:
+        with UseDatabase(DATABASE_URL) as cursor:
+                    _SQL="""SELECT email, exchange_rate FROM recipients 
+                    WHERE exchange_rate < %s and mail_send_date IS NULL;"""
+                    cursor.execute(_SQL, ((exchange_rate - 150),))
+                    recipients = cursor.fetchall()
+    except Exception as error:
+        print(error)
+        recipients = ""
+    return recipients
+
+
+def update_send_mail_date(recipients):
+    """update recipient mail_send_date"""
+    send_date = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+    try:
+        with UseDatabase(DATABASE_URL) as cursor:
+                    _SQL="""UPDATE recipients SET mail_send_date = %s 
+                    WHERE email IN %s and mail_send_date IS NULL;"""
+                    cursor.execute(_SQL, (send_date, recipients))
+                    recipients = cursor.fetchall()
+    except Exception as error:
+        print(error)
+
+
+def send_mail(exchange_rate, emails):
     with app.app_context():
         msg = Message(subject = f"Update NZD/VND exchange rate {date.today()}",
                       sender = "Exchange Rate Tracking",
-                      recipients = [email],
+                      recipients = emails,
                       body = f"NZD/VND is {exchange_rate} at the moment.")
         mail.send(msg)
     return "Send mail successfully!"
-
-
-def getExchange(recipients, send_mail_date):
-    get_exchange_rate(recipients, send_mail_date)
-    t = Timer(5, getExchange, args=(recipients, send_mail_date))
-    t.start()
 
 
 def wake_up():
@@ -75,6 +95,23 @@ def wake_up():
         t.start()
 
 
+def main():
+    exchange_rate = get_exchange_rate()
+    recipients = get_recipients(exchange_rate)
+    if recipients:
+        emails = []
+        for recipient in recipients:
+            email, value = recipient
+            emails.append(email)
+        send_mail(exchange_rate, emails)
+        update_send_mail_date(tuple(emails))
+
+    t = Timer(5, main)
+    t.start()
+
+
+
+#define app
 @app.route("/")
 def index():
     entry_headling = "Welcome to NZD Exchange Rate Tracking Site "
@@ -83,9 +120,9 @@ def index():
 
 @app.route("/start")
 def start():
-    getExchange(recipients, send_mail_date)
+    main()
     wake_up()
-    return "Start get exchange successfully!"
+    return render_template("successful.html", message ="Start get exchange successfully!")
 
 
 @app.route("/register", methods=["GET", "POST"])
@@ -98,12 +135,12 @@ def register():
     value = float(request.form["value"].replace(",", ""))
     email = request.form["email"].strip()
     try:
-        with UseDatabase(app.config['dbconfig']) as cursor:
+        with UseDatabase(DATABASE_URL) as cursor:
             _SELECT_SQL="""SELECT * FROM recipients WHERE email = %s;"""
             cursor.execute(_SELECT_SQL, (email,))
             check = cursor.fetchone()
             if check:
-                _UPDATE_SQL="""UPDATE recipients SET exchange_rate = %s WHERE email = %s;"""
+                _UPDATE_SQL="""UPDATE recipients SET exchange_rate = %s, mail_send_date = NULL WHERE email = %s;"""
                 cursor.execute(_UPDATE_SQL, (value, email))
                 message = "You have updated exchange rate value successfully!"
             else:
@@ -127,7 +164,7 @@ def unfollow():
     #handle POST request
     email = request.form["email"].strip()
     try:
-        with UseDatabase(app.config['dbconfig']) as cursor:
+        with UseDatabase(DATABASE_URL) as cursor:
                     _SQL="""DELETE FROM recipients
                             WHERE email = %s;"""
                     cursor.execute(_SQL, (email,))
@@ -136,11 +173,6 @@ def unfollow():
         print(error)
         message = error
     return render_template("successful.html", message = message)
-
-
-@app.route("/view")
-def view():    
-    return render_template("view.html", recipients = recipients, send_date = send_mail_date)
 
     
 app.secret_key = "abc"

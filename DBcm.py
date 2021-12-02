@@ -3,7 +3,7 @@ import psycopg2
 
 class UseDatabase:
 
-    def __init__(self, config: dict) -> None:
+    def __init__(self, config) -> None:
         self.configuration = config
 
     def __enter__(self):
