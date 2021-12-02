@@ -1,0 +1,11 @@
+{% extends 'base.html' %}
+
+{% block body %}
+
+<h2>{{ entry_headling }}</h2>
+<p>This site allow you to track the exchange rate of NZD to VND. If the exchange rate reach the specified value, 
+    it will send you an email to update the information.
+</p>
+<p><a href="{{ url_for('register') }}">Register</a></p>
+<p><a href="{{ url_for('unfollow') }}">Unfollow</a></p>
+{% endblock %}

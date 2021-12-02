@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+
+{% block body %}
+<form method="POST" action="/unfollow">
+    <p>Please fill in your email to unfollow the NZD exchange rate site.
+    </p>
+    <p>
+        <label>Email: </label>
+        <input type="text" name="email" id="email" placeholder="Email" autocomplete="off">
+    </p>
+    <p>
+        <input type="submit" value="Unfollow">
+    </p>
+</form>
+{% endblock %}
